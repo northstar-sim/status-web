@@ -11,10 +11,19 @@ export function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 }
 
+// Returns a valid Date for deployedAt, or null when it is missing or invalid.
+// null/undefined are checked explicitly because new Date(null) is the Unix epoch;
+// numeric 0 is a real timestamp and stays valid.
+function parseDeployedAt(deployedAt) {
+  if (deployedAt == null) return null;
+  const deployed = new Date(deployedAt);
+  return Number.isNaN(deployed.getTime()) ? null : deployed;
+}
+
 // Returns { label, stale } describing how long ago deployedAt was, relative to now.
 export function deploymentFreshness(deployedAt, now = new Date()) {
-  const deployed = new Date(deployedAt);
-  if (deployedAt == null || Number.isNaN(deployed.getTime())) return { label: 'unknown', stale: false };
+  const deployed = parseDeployedAt(deployedAt);
+  if (!deployed) return { label: 'unknown', stale: false };
   const age = new Date(now).getTime() - deployed.getTime();
   if (age < 0) return { label: 'in the future', stale: false };
   const stale = age >= STALE_AFTER_MS;
@@ -26,7 +35,7 @@ export function deploymentFreshness(deployedAt, now = new Date()) {
 
 export function renderServiceCard({ name, environment, version, deployedAt }, now = new Date()) {
   const { label, stale } = deploymentFreshness(deployedAt, now);
-  const deployedIso = Number.isNaN(new Date(deployedAt).getTime()) ? '' : new Date(deployedAt).toISOString();
+  const deployedIso = parseDeployedAt(deployedAt)?.toISOString() ?? '';
   return `<article class="service-card${stale ? ' stale' : ''}">
   <h2>${escapeHtml(name)}</h2>
   <dl>

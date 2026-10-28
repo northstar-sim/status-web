@@ -20,6 +20,20 @@ test('deployments a week or older are stale', () => {
 test('missing or invalid deployedAt is reported as unknown', () => {
   assert.equal(deploymentFreshness(undefined, now).label, 'unknown');
   assert.equal(deploymentFreshness('not a date', now).label, 'unknown');
+  assert.equal(deploymentFreshness(null, now).label, 'unknown');
+});
+
+test('WEB-5: null and invalid deployedAt render unknown with an empty datetime', () => {
+  for (const deployedAt of [null, undefined, '', 'not a date', NaN]) {
+    const html = renderServiceCard({ ...card, deployedAt }, now);
+    assert.match(html, /<time datetime="">unknown<\/time>/, String(deployedAt));
+  }
+});
+
+test('WEB-5: numeric 0 is a valid epoch timestamp, not unknown', () => {
+  const html = renderServiceCard({ ...card, deployedAt: 0 }, now);
+  assert.match(html, /<time datetime="1970-01-01T00:00:00.000Z">\d+ days ago<\/time>/);
+  assert.match(html, /class="service-card stale"/);
 });
 
 test('card shows name, environment, version and freshness', () => {
