@@ -47,3 +47,10 @@ test('status page renders one card per service', () => {
   assert.ok(html.startsWith('<!doctype html>'));
   assert.equal(html.match(/<article/g).length, 2);
 });
+
+test('cards are focusable and the page wires up arrow/Enter keyboard navigation', () => {
+  const html = renderStatusPage([{ ...card, deployedAt: now }, { ...card, name: 'usage-api', deployedAt: now }], now);
+  assert.equal(html.match(/<article class="service-card[^"]*" tabindex="0"/g).length, 2);
+  assert.match(html, /<script>\(function enableCardKeyboardNav\(\)/);
+  for (const key of ['ArrowDown', 'ArrowUp', 'Enter']) assert.ok(html.includes(`'${key}'`), key);
+});

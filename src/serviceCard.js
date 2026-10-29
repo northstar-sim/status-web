@@ -24,10 +24,30 @@ export function deploymentFreshness(deployedAt, now = new Date()) {
   return { label: `${plural(Math.floor(age / DAY), 'day')} ago`, stale };
 }
 
+// Runs in the browser: arrow keys move focus between cards, Enter clicks the focused card.
+function enableCardKeyboardNav() {
+  const cards = [...document.querySelectorAll('.service-card')];
+  document.addEventListener('keydown', (e) => {
+    const i = cards.indexOf(document.activeElement);
+    if (i === -1) return;
+    if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+      e.preventDefault();
+      cards[Math.min(i + 1, cards.length - 1)].focus();
+    } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+      e.preventDefault();
+      cards[Math.max(i - 1, 0)].focus();
+    } else if (e.key === 'Enter') {
+      cards[i].click();
+    }
+  });
+}
+
+const cardKeyboardScript = `<script>(${enableCardKeyboardNav})();</script>`;
+
 export function renderServiceCard({ name, environment, version, deployedAt }, now = new Date()) {
   const { label, stale } = deploymentFreshness(deployedAt, now);
   const deployedIso = Number.isNaN(new Date(deployedAt).getTime()) ? '' : new Date(deployedAt).toISOString();
-  return `<article class="service-card${stale ? ' stale' : ''}">
+  return `<article class="service-card${stale ? ' stale' : ''}" tabindex="0">
   <h2>${escapeHtml(name)}</h2>
   <dl>
     <dt>Environment</dt><dd>${escapeHtml(environment)}</dd>
@@ -56,6 +76,7 @@ dt{color:#5b6475}dd{margin:0}
 <body>
 <h1>Northstar status</h1>
 ${services.map((s) => renderServiceCard(s, now)).join('\n')}
+${cardKeyboardScript}
 </body>
 </html>`;
 }
